@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happy Birthday! 🎂</title>
+<style>
+  :root {
+    --bg: #FFF0F5;
+    --dark-pink: #D6336C;
+    --pink: #F8A5C2;
+    --text: #5A2A3A;
+    --soft-text: #A07888;
+    --paper: #FFFDF8;
+    --shadow: #EBCAD7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .page {
+    display: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 28px 16px 24px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .page.active { display: flex; }
+
+  h1 {
+    color: var(--dark-pink);
+    font-size: clamp(30px, 7vw, 44px);
+    margin: 8px 0 0;
+    opacity: 0;
+    transform: translateY(-30px);
+    animation: dropIn .8s cubic-bezier(.2,.8,.3,1) forwards;
+  }
+  @keyframes dropIn { to { opacity: 1; transform: none; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(110vh); } to { opacity: 1; transform: none; } }
+
+  #scene { width: 100%; max-width: 640px; aspect-ratio: 640 / 300; display: block; }
+
+  .message { min-height: 120px; margin-top: 8px; max-width: 520px; }
+  .label {
+    color: var(--dark-pink); font-weight: bold; font-size: 18px;
+    margin-bottom: 8px; min-height: 22px;
+  }
+  .label.show { animation: fadeUp .3s ease-out; }
+  .typed { font-size: clamp(19px, 4.5vw, 23px); line-height: 1.45; }
+
+  .buttons {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 22px;
+    margin-top: 14px;
+  }
+  .buttons.hidden { visibility: hidden; }
+  .buttons.appear { animation: fadeUp .6s ease-out; }
+  button {
+    font: bold 19px Arial, Helvetica, sans-serif;
+    width: 250px; height: 56px;
+    border: none; border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 var(--shadow);
+    transition: transform .12s ease, box-shadow .12s ease, background .15s;
+  }
+  button.primary { background: var(--dark-pink); color: #fff; }
+  button.secondary { background: #fff; color: var(--dark-pink); }
+  button:hover { transform: translateY(-3px); box-shadow: 0 8px 0 var(--shadow); }
+  button.primary:hover { background: #C42E62; }
+  button.secondary:hover { background: #FEE6EF; }
+  button:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--shadow); }
+  button.small { width: 170px; height: 50px; font-size: 17px; }
+
+  .counter { margin-top: 18px; color: var(--soft-text); font-style: italic; font-size: 15px; min-height: 18px; }
+
+  /* Letter */
+  #letterPage h2 { color: var(--dark-pink); font-size: clamp(28px, 6vw, 36px); margin: 4px 0 18px; animation: fadeUp .6s ease-out; }
+  .paper {
+    background: var(--paper);
+    width: 100%; max-width: 620px;
+    border-radius: 20px;
+    box-shadow: 7px 7px 0 var(--shadow);
+    padding: 30px 30px 44px;
+    text-align: left;
+    font-size: clamp(18px, 4.2vw, 20px);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    position: relative;
+    min-height: 300px;
+    cursor: pointer;
+    animation: slideUp .8s cubic-bezier(.2,.8,.3,1);
+  }
+  .paper .hearts { position: absolute; right: 20px; bottom: 12px; color: var(--pink); font-size: 26px; letter-spacing: -6px; }
+  .paper .hearts small { font-size: 16px; opacity: .6; }
+  #letterPage .buttons { margin: 26px 0 8px; }
+
+  /* Wider paper on laptops and big screens */
+  #letterPage { max-width: 1000px; }
+  @media (min-width: 900px) {
+    .paper { max-width: 780px; padding: 40px 52px 52px; }
+  }
+
+  /* Birthday stickers on both sides of the letter (only when there's room) */
+  .stickers { display: none; }
+  @media (min-width: 1150px) {
+    #letterPage.active ~ .stickers { display: block; }
+  }
+  .side { position: fixed; top: 0; bottom: 0; width: calc(50% - 400px); z-index: 0; pointer-events: none; }
+  .side.left { left: 0; }
+  .side.right { right: 0; }
+  .sticker {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    animation: stickerIn .7s ease-out forwards, float 4s ease-in-out infinite;
+  }
+  .sticker svg { display: block; width: 100%; height: auto; }
+  @keyframes stickerIn { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+  @keyframes float {
+    0%, 100% { translate: 0 0; rotate: var(--tilt, 0deg); }
+    50% { translate: 0 -12px; rotate: calc(var(--tilt, 0deg) + 3deg); }
+  }
+
+  /* Finale */
+  .line1 { font-size: clamp(24px, 5.5vw, 30px); margin-top: 20px; min-height: 36px; }
+  #bigHeart { width: 300px; max-width: 80vw; aspect-ratio: 1; display: block; margin: 6px 0; }
+  .line2 { font-size: clamp(19px, 4.5vw, 22px); min-height: 30px; }
+  .line3 { font-size: clamp(25px, 6vw, 32px); color: var(--dark-pink); font-weight: bold; margin: 12px 0 8px; min-height: 40px; }
+
+  #floaters, #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #floaters { z-index: 0; }
+  #confetti { z-index: 5; }
+</style>
+</head>
+<body>
+
+<canvas id="floaters"></canvas>
+
+<!-- ============ HOME ============ -->
+<section class="page active" id="home">
+  <h1 id="title"></h1>
+  <canvas id="scene"></canvas>
+  <div class="message">
+    <div class="label" id="label"></div>
+    <div class="typed" id="typed"></div>
+  </div>
+  <div class="buttons hidden" id="homeButtons">
+    <button class="primary" id="reasonBtn">Click for a reason ♥</button>
+    <button class="secondary" id="letterBtn">Wishes for love ✉</button>
+  </div>
+  <div class="counter" id="counter"></div>
+</section>
+
+<!-- ============ LETTER ============ -->
+<section class="page" id="letterPage">
+  <h2>Cinta's birthday letter ♥</h2>
+  <div class="paper" id="paper"><span id="letterText"></span><div class="hearts"><small>♥</small> ♥</div></div>
+  <div class="buttons">
+    <button class="secondary small" id="backBtn">← Back</button>
+  </div>
+</section>
+
+<!-- ============ STICKERS (beside the letter) ============ -->
+<div class="stickers" aria-hidden="true">
+ <div class="side left">
+  <!-- Left: balloons -->
+  <div class="sticker" style="left:18%; top:9%; width:min(150px, 62%); --tilt:-6deg; animation-delay:.2s, 0s;">
+    <svg viewBox="0 0 150 250">
+      <path d="M45 118 C40 150 62 175 52 205 S60 235 75 248" stroke="#C9A0B0" stroke-width="2" fill="none"/>
+      <path d="M100 98 C108 140 85 170 92 205 S80 235 75 248" stroke="#C9A0B0" stroke-width="2" fill="none"/>
+      <path d="M75 128 C70 165 82 200 75 248" stroke="#C9A0B0" stroke-width="2" fill="none"/>
+      <ellipse cx="45" cy="78" rx="36" ry="42" fill="#F8A5C2"/>
+      <path d="M40 120 L50 120 L45 112 Z" fill="#F8A5C2"/>
+      <ellipse cx="100" cy="58" rx="36" ry="42" fill="#D6336C"/>
+      <path d="M95 100 L105 100 L100 92 Z" fill="#D6336C"/>
+      <ellipse cx="75" cy="88" rx="32" ry="38" fill="#FFD166"/>
+      <path d="M70 128 L80 128 L75 120 Z" fill="#FFD166"/>
+      <ellipse cx="32" cy="62" rx="8" ry="13" fill="#fff" opacity=".45" transform="rotate(-20 32 62)"/>
+      <ellipse cx="88" cy="42" rx="8" ry="13" fill="#fff" opacity=".35" transform="rotate(-20 88 42)"/>
+      <ellipse cx="64" cy="74" rx="7" ry="11" fill="#fff" opacity=".5" transform="rotate(-20 64 74)"/>
+    </svg>
+  </div>
+
+  <!-- Left: present -->
+  <div class="sticker" style="left:30%; top:62%; width:min(120px, 52%); --tilt:5deg; animation-delay:.5s, 1.2s;">
+    <svg viewBox="0 0 120 120">
+      <ellipse cx="44" cy="22" rx="18" ry="11" fill="none" stroke="#D6336C" stroke-width="7" transform="rotate(-25 44 22)"/>
+      <ellipse cx="76" cy="22" rx="18" ry="11" fill="none" stroke="#D6336C" stroke-width="7" transform="rotate(25 76 22)"/>
+      <rect x="14" y="48" width="92" height="64" rx="6" fill="#F8A5C2"/>
+      <rect x="8" y="32" width="104" height="22" rx="6" fill="#FFB8CF"/>
+      <rect x="52" y="32" width="16" height="80" fill="#D6336C"/>
+      <circle cx="60" cy="31" r="8" fill="#D6336C"/>
+      <circle cx="30" cy="80" r="4" fill="#fff" opacity=".7"/>
+      <circle cx="88" cy="94" r="4" fill="#fff" opacity=".7"/>
+      <circle cx="86" cy="68" r="3" fill="#fff" opacity=".7"/>
+    </svg>
+  </div>
+
+  <!-- Left: sparkles -->
+  <div class="sticker" style="left:66%; top:47%; width:44px; animation-delay:.8s, .6s;">
+    <svg viewBox="0 0 40 40"><path d="M20 0 C22 14 26 18 40 20 C26 22 22 26 20 40 C18 26 14 22 0 20 C14 18 18 14 20 0Z" fill="#FFD166"/></svg>
+  </div>
+  <div class="sticker" style="left:20%; top:86%; width:28px; animation-delay:1s, 2s;">
+    <svg viewBox="0 0 40 40"><path d="M20 0 C22 14 26 18 40 20 C26 22 22 26 20 40 C18 26 14 22 0 20 C14 18 18 14 20 0Z" fill="#74C0FC"/></svg>
+  </div>
+
+  <div class="sticker" style="left:44%; top:34%; width:70px; animation-delay:.7s, 2.4s;">
+    <svg viewBox="0 0 70 50"><rect x="4" y="10" width="14" height="6" rx="2" fill="#06D6A0" transform="rotate(-30 11 13)"/><rect x="40" y="4" width="14" height="6" rx="2" fill="#B197FC" transform="rotate(25 47 7)"/><rect x="26" y="34" width="14" height="6" rx="2" fill="#FFD166" transform="rotate(60 33 37)"/><circle cx="60" cy="38" r="4" fill="#D6336C"/></svg>
+  </div>
+ </div>
+ <div class="side right">
+  <!-- Right: party hat -->
+  <div class="sticker" style="right:24%; top:10%; width:min(120px, 52%); --tilt:12deg; animation-delay:.35s, .8s;">
+    <svg viewBox="0 0 120 150">
+      <defs><clipPath id="hat"><path d="M60 14 L106 138 L14 138 Z"/></clipPath></defs>
+      <path d="M60 14 L106 138 L14 138 Z" fill="#B197FC"/>
+      <g clip-path="url(#hat)" stroke="#FFD166" stroke-width="12">
+        <line x1="0" y1="70" x2="120" y2="40"/><line x1="0" y1="110" x2="120" y2="80"/><line x1="0" y1="150" x2="120" y2="120"/>
+      </g>
+      <g clip-path="url(#hat)" fill="#fff" opacity=".8">
+        <circle cx="52" cy="58" r="4"/><circle cx="72" cy="96" r="4"/><circle cx="42" cy="122" r="4"/>
+      </g>
+      <path d="M8 138 Q20 128 32 138 Q44 128 56 138 Q68 128 80 138 Q92 128 104 138 Q112 132 114 138 L114 146 L6 146 L6 138Z" fill="#F8A5C2"/>
+      <circle cx="60" cy="12" r="11" fill="#D6336C"/>
+    </svg>
+  </div>
+
+  <!-- Right: cake slice -->
+  <div class="sticker" style="right:22%; top:58%; width:min(130px, 58%); --tilt:-4deg; animation-delay:.65s, 1.8s;">
+    <svg viewBox="0 0 130 120">
+      <rect x="58" y="6" width="7" height="26" rx="2" fill="#74C0FC"/>
+      <ellipse cx="61.5" cy="4" rx="5" ry="7" fill="#FF9F1C"/>
+      <path d="M10 60 L120 36 L120 108 L10 108 Z" fill="#8B5A2B"/>
+      <path d="M10 60 L120 36 L120 52 L10 76 Z" fill="#FFE5B4"/>
+      <rect x="10" y="80" width="110" height="9" fill="#F8A5C2"/>
+      <path d="M10 60 L120 36 L124 30 L14 52 Z" fill="#FFF5E6"/>
+      <circle cx="40" cy="48" r="7" fill="#D6336C"/>
+      <circle cx="78" cy="40" r="6" fill="#D6336C"/>
+      <rect x="6" y="108" width="118" height="6" rx="3" fill="#DDDDDD"/>
+    </svg>
+  </div>
+
+  <!-- Right: sparkles + little heart -->
+  <div class="sticker" style="right:62%; top:40%; width:36px; animation-delay:.9s, 1.4s;">
+    <svg viewBox="0 0 40 40"><path d="M20 0 C22 14 26 18 40 20 C26 22 22 26 20 40 C18 26 14 22 0 20 C14 18 18 14 20 0Z" fill="#F8A5C2"/></svg>
+  </div>
+  <div class="sticker" style="right:50%; top:86%; width:46px; --tilt:10deg; animation-delay:1.1s, .3s;">
+    <svg viewBox="0 0 40 36"><path d="M20 34 C8 24 0 17 0 9 C0 3 5 0 10 0 C15 0 18 3 20 6 C22 3 25 0 30 0 C35 0 40 3 40 9 C40 17 32 24 20 34Z" fill="#D6336C"/></svg>
+  </div>
+
+  <div class="sticker" style="right:16%; top:79%; width:70px; animation-delay:.9s, 2.8s;">
+    <svg viewBox="0 0 70 50"><rect x="6" y="30" width="14" height="6" rx="2" fill="#74C0FC" transform="rotate(35 13 33)"/><rect x="38" y="8" width="14" height="6" rx="2" fill="#F8A5C2" transform="rotate(-20 45 11)"/><circle cx="16" cy="10" r="4" fill="#FFD166"/><circle cx="58" cy="40" r="4" fill="#06D6A0"/></svg>
+  </div>
+ </div>
+</div>
+
+<!-- ============ FINALE ============ -->
+<section class="page" id="finale">
+  <div class="line1" id="line1"></div>
+  <canvas id="bigHeart"></canvas>
+  <div class="line2" id="line2"></div>
+  <div class="line3" id="line3"></div>
+  <div class="buttons hidden" id="finaleButtons">
+    <button class="primary" id="finaleLetterBtn">Read my letter ✉</button>
+    <button class="secondary" id="againBtn">Start over ↺</button>
+  </div>
+</section>
+
+<canvas id="confetti"></canvas>
+
+<script>
+// =====================================================
+//  ✏️  THE PARTS YOU EDIT
+// =====================================================
+
+const hisName = "Dani";     // his name or nickname
+const yourName = "Nana";      // how you sign the letter
+
+// Specific memories work best!
+const reasons = [
+  "Kamu membuat saya rasa dihargai",
+  "I like to see you berusaha untuk mencapai impian kamu ",
+  "Sebab kamu selalu buat saya ketawa tanpa perlu mencuba ",
+  "I love how I can be myself around you ",
+  "Sebab kehadiran kamu membawa ketenangan",
+  "You are hardworking",
+  "Kamu sangat penyabar",
+  "You're my favourite person to do nothing with",
+  "I love how talking to you can make my day better",
+  "Sebab saya suka dengar cerita kamu, walaupun benda kecil",
+  "Sebab saya sentiasa ada something to learn from you",
+  "Sebab saya suka cara kamu berfikir",
+  "You make me feel safe to be myself",
+  "Kamu jarang marah",
+  "Sebab walaupun kita jauh, kamu tetap dekat di hati",
+  "Sebab kamu ada cara tersendiri untuk melihat sesuatu perkara",
+  "Masih banyak tentang diri kamu yang saya ingin kenali",
+  "You are funny",
+  "My favourite bestie <3",
+  "Sebab saya dapat menyaksikan perjalanan hidup kamu",
+  "Saya suka melihat sisi diri kamu yang jarang ditunjukkan kepada orang lain",
+  "Kamu kuatt",
+  "Sebab saya selalu tersenyum bila kamu senyum",
+  "Sebab saya bersyukur takdir menemukan saya dengan seseorang seperti kamu"
+];
+
+// Your letter goes between the two backticks ` `
+// Press Enter twice for a new paragraph.
+const letter = `Happy birthday Dani sayang!
+
+Untuk ulang tahun kamu yang ke-24, saya memberi kamu 24 reasons you are special to me and sebab saya sayang kamu ♥ Ada banyak perkara tentang diri kamu yang saya hargai including the small things yang kamu mungkin tidak sadar. 
+
+Whatever this new chapter of your life brings, I hope you will always continue chasing your dreams and work towards everything that you want. I hope life will always be kind to you and that you will always find reasons to be proud of yourself, just as I am proud to have you in my life. 
+
+Semoga tahun ini dan tahun" yang akan datang hidup kamu penuh dengan ketenangan, barakah dan segala perkara baik yang kamu impikan.
+
+Jangan pernah lupa kamu juga layak menerima kebahagiaan, kasih sayang dan segala kebaikan yang kamu berikan kepada orang lain. Thank you for being patient with me, making me laugh and for being my favourite person. 
+
+May Allah always protect you, guide you towards what is best for you and grant you success in this life and the hereafter! aminnn kaya bareng ♥
+
+Here's to many more birthdays together.`;
+
+// =====================================================
+//  Everything below makes it work
+// =====================================================
+
+const COLOURS = { darkPink: "#D6336C", pink: "#F8A5C2", cream: "#FFE5B4", brown: "#8B5A2B", plate: "#DDDDDD" };
+const CONFETTI = ["#D6336C", "#F8A5C2", "#FFD166", "#06D6A0", "#74C0FC", "#B197FC"];
+
+const $ = id => document.getElementById(id);
+const easeOut = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+const easeOutBack = t => { t = Math.min(1, Math.max(0, t)); return 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2); };
+
+// Shuffle the reasons so they come in a random order with no repeats
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+}
+shuffle(reasons);
+
+let reasonNumber = 0;
+let cameFrom = "home";
+let letterTyped = false;
+let homeStart = performance.now();
+
+// ---------------- Canvas helpers ----------------
+function setupCanvas(canvas, width, height) {
+  // Makes canvas drawings sharp on phones and retina screens
+  const ratio = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || width;
+  const scale = cssWidth / width;
+  canvas.width = Math.round(cssWidth * ratio);
+  canvas.height = Math.round(height * scale * ratio);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(ratio * scale, 0, 0, ratio * scale, 0, 0);
+  return ctx;
+}
+
+function heart(ctx, cx, cy, width, colour) {
+  // Same heart shape as the Python version, centred on (cx, cy)
+  if (width < 2) return;
+  const r = width / 3.736;
+  const rad = d => d * Math.PI / 180;
+  const tipX = cx, tipY = cy + 1.517 * r;        // canvas y goes downwards
+  const L = 1.972 * r;
+  const px = tipX + L * Math.cos(rad(140)), py = tipY - L * Math.sin(rad(140));
+  const c1x = px + r * Math.cos(rad(50)), c1y = py - r * Math.sin(rad(50));
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(px, py);
+  ctx.arc(c1x, c1y, r, rad(-230), rad(-30));     // left bump
+  ctx.arc(2 * cx - c1x, c1y, r, rad(-150), rad(50)); // right bump
+  ctx.lineTo(tipX, tipY);
+  ctx.fillStyle = colour;
+  ctx.fill();
+}
+
+// ---------------- Home scene: cake + floating hearts ----------------
+const scene = $("scene");
+let sceneCtx = setupCanvas(scene, 640, 300);
+
+function drawScene(now) {
+  const t = (now - homeStart) / 1000;
+  const ctx = sceneCtx;
+  ctx.clearRect(0, 0, 640, 300);
+  // Turtle-style coordinates: (0,0) is the cake's middle, y goes up
+  const X = x => 320 + x, Y = y => 255 - y;
+  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(X(x), Y(y + h), w, h); };
+  const dot = (x, y, size, c) => { ctx.beginPath(); ctx.arc(X(x), Y(y), Math.max(0.5, size / 2), 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); };
+
+  const heartFade = easeOut((t - 1.2) / 0.6);
+  heart(ctx, X(-250), Y(80 + 7 * Math.sin(t * 2)), 74 * heartFade, COLOURS.pink);
+  heart(ctx, X(250), Y(80 + 7 * Math.sin(t * 2 + 1.5)), 74 * heartFade, COLOURS.pink);
+
+  const dy = -420 * (1 - easeOut((t - 0.3) / 1.3));   // cake rises up
+  ctx.save();
+  ctx.translate(0, -dy);
+  rect(-170, -20, 340, 12, COLOURS.plate);
+  rect(-150, -8, 300, 80, COLOURS.brown);
+  rect(-150, 52, 300, 20, COLOURS.cream);
+  for (let x = -140; x < 150; x += 28) dot(x, 52, 14, COLOURS.cream);
+  rect(-100, 72, 200, 60, COLOURS.pink);
+  rect(-100, 117, 200, 15, COLOURS.cream);
+  for (let x = -90; x < 100; x += 30) dot(x, 117, 12, COLOURS.cream);
+  [-60, -20, 20, 60].forEach((x, i) => {
+    rect(x - 5, 132, 10, 40, COLOURS.darkPink);
+    const f = Math.sin(t * 11 + i * 2) + Math.sin(t * 17 + i);
+    dot(x + f * 0.8, 181 + f, 17 + f * 1.5, "#FF9F1C");
+    dot(x + f * 0.5, 183 + f, 8 + f, "#FFE066");
+  });
+  ctx.restore();
+}
+
+// ---------------- Typewriter ----------------
+let typingJob = 0;
+function typeInto(el, text, speed = 40, delay = 0) {
+  // Types text into an element letter by letter. Returns a promise.
+  const job = ++typingJob;
+  el.textContent = "";
+  return new Promise(resolve => {
+    const start = performance.now() + delay;
+    function step(now) {
+      if (job !== typingJob) return resolve();
+      const n = Math.max(0, Math.floor((now - start) / 1000 * speed));
+      el.textContent = text.slice(0, n);
+      if (n < text.length) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// ---------------- Confetti ----------------
+const confetti = $("confetti");
+let confettiCtx, pieces = [];
+function sizeOverlays() {
+  const ratio = window.devicePixelRatio || 1;
+  for (const c of [confetti, $("floaters")]) {
+    c.width = innerWidth * ratio;
+    c.height = innerHeight * ratio;
+    c.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+  confettiCtx = confetti.getContext("2d");
+  sceneCtx = setupCanvas(scene, 640, 300);
+  heartCtx = setupCanvas(bigHeart, 300, 300);
+}
+
+function burstConfetti(button) {
+  const box = button.getBoundingClientRect();
+  for (let i = 0; i < 60; i++) {
+    pieces.push({
+      x: box.left + box.width / 2, y: box.top,
+      vx: (Math.random() - 0.5) * 520,
+      vy: -(300 + Math.random() * 320),
+      size: 6 + Math.random() * 6,
+      spin: Math.random() * 6,
+      colour: CONFETTI[Math.floor(Math.random() * CONFETTI.length)],
+      life: 1.4 + Math.random() * 0.7,
+    });
+  }
+}
+
+function drawConfetti(dt) {
+  confettiCtx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const p of pieces) {
+    p.vy += 900 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    p.spin += dt * 8;
+    const size = p.size * Math.min(1, p.life * 2);
+    if (size < 1) continue;   // the bug we fixed in Python!
+    confettiCtx.save();
+    confettiCtx.translate(p.x, p.y);
+    confettiCtx.rotate(p.spin);
+    confettiCtx.fillStyle = p.colour;
+    confettiCtx.fillRect(-size / 2, -size / 4, size, size / 2);
+    confettiCtx.restore();
+  }
+  pieces = pieces.filter(p => p.life > 0);
+}
+
+// ---------------- Finale: big heart + floating hearts ----------------
+const bigHeart = $("bigHeart");
+let heartCtx;
+let finaleStart = 0, floaters = [];
+
+function drawFinale(now, dt) {
+  const t = (now - finaleStart) / 1000;
+  heartCtx.clearRect(0, 0, 300, 300);
+  const pop = easeOutBack((t - 0.6) / 0.7);
+  const beat = 1 + 0.06 * Math.pow(Math.max(0, Math.sin(t * 5)), 8);
+  heart(heartCtx, 150, 150, 260 * pop * beat, COLOURS.darkPink);
+
+  const fctx = $("floaters").getContext("2d");
+  fctx.clearRect(0, 0, innerWidth, innerHeight);
+  if (Math.random() < 0.08) {
+    floaters.push({ x: Math.random() * innerWidth, y: innerHeight + 30,
+      size: 14 + Math.random() * 18, speed: 40 + Math.random() * 50, phase: Math.random() * 6 });
+  }
+  for (const f of floaters) {
+    f.y -= f.speed * dt;
+    heart(fctx, f.x + 12 * Math.sin(t + f.phase), f.y, f.size, "rgba(248,165,194,0.45)");
+  }
+  floaters = floaters.filter(f => f.y > -40);
+}
+
+// ---------------- Pages ----------------
+function show(pageId) {
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === pageId));
+  window.scrollTo(0, 0);
+  sizeOverlays();
+}
+function currentPage() { return document.querySelector(".page.active").id; }
+
+function startHome() {
+  shuffle(reasons);
+  reasonNumber = 0;
+  homeStart = performance.now();
+  $("label").textContent = "";
+  $("counter").textContent = "";
+  $("reasonBtn").textContent = "Click for a reason ♥";
+  $("homeButtons").className = "buttons hidden";
+  const title = $("title");
+  title.textContent = `Happy Birthday, ${hisName}!`;
+  title.style.animation = "none"; title.offsetHeight; title.style.animation = "";
+  show("home");
+  typeInto($("typed"), `My gift to you <3. Ada ${reasons.length} reasons saya sayang kamu hehe and birthday letter`, 40, 1600);
+  setTimeout(() => $("homeButtons").className = "buttons appear", 2000);
+}
+
+function nextReason() {
+  if (reasonNumber < reasons.length) {
+    reasonNumber++;
+    const label = $("label");
+    label.textContent = `Reason #${reasonNumber}`;
+    label.classList.remove("show"); label.offsetHeight; label.classList.add("show");
+    typeInto($("typed"), reasons[reasonNumber - 1], 40, 150);
+    $("counter").textContent = `${reasonNumber} of ${reasons.length} reasons opened`;
+    if (reasonNumber === reasons.length) $("reasonBtn").textContent = "One last thing... ♥";
+    burstConfetti($("reasonBtn"));
+  } else {
+    startFinale();
+  }
+}
+
+async function startFinale() {
+  show("finale");
+  finaleStart = performance.now();
+  floaters = [];
+  $("finaleButtons").className = "buttons hidden";
+  ["line1", "line2", "line3"].forEach(id => $(id).textContent = "");
+  await typeInto($("line1"), "That's all of them... for now.", 32, 200);
+  await typeInto($("line2"), "Actually, I could never fit them all in one window.", 32, 900);
+  await typeInto($("line3"), `Happy birthday, ${hisName}. I love you. ♥`, 18, 900);
+  setTimeout(() => $("finaleButtons").className = "buttons appear", 600);
+}
+
+const fullLetter = `Dear ${hisName},\n\n${letter}\n\nLove,\n${yourName}`;
+function openLetter() {
+  cameFrom = currentPage();
+  show("letterPage");
+  if (!letterTyped) {
+    letterTyped = true;
+    typeInto($("letterText"), fullLetter, 55, 800);
+  } else {
+    $("letterText").textContent = fullLetter;   // already read once: show it all
+  }
+}
+$("paper").addEventListener("click", () => { typingJob++; $("letterText").textContent = fullLetter; });
+
+$("reasonBtn").addEventListener("click", nextReason);
+$("letterBtn").addEventListener("click", openLetter);
+$("finaleLetterBtn").addEventListener("click", openLetter);
+$("backBtn").addEventListener("click", () => show(cameFrom));
+$("againBtn").addEventListener("click", () => { $("floaters").getContext("2d").clearRect(0, 0, innerWidth, innerHeight); startHome(); });
+addEventListener("resize", sizeOverlays);
+
+// ---------------- Animation loop (~60 frames a second) ----------------
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  const page = currentPage();
+  if (page === "home") drawScene(now);
+  if (page === "finale") drawFinale(now, dt);
+  drawConfetti(dt);
+}
+
+sizeOverlays();
+startHome();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
